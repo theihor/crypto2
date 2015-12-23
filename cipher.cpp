@@ -4,6 +4,8 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <cstdlib>
+
 
 using namespace std;
 
@@ -17,7 +19,7 @@ using namespace std;
 void print_hex(char* s, int n) {
     int i = 0;
     for (i = 0; i < n; i++) {
-        if (s[i] >= 16) {
+        if ((s[i] & 0xf0) != 0) {
             printf("%x", s[i] & 0xff);
         } else {
             printf("0%x", s[i] & 0xf);
@@ -47,25 +49,26 @@ char substitute(int i, int j) {
     return s_table[i*8 + j];
 }
 
-void generate(char* x) { /*
+void generate(char* x) { 
+    
     int i = 1;
     while (i < 3) {
-        char c = x[i];
+        unsigned char c = x[i];
         x[i] = x[BLOCK_SIZE - i];
         x[BLOCK_SIZE - i] = c;
-        i += 1 + c % 2;
+        i += 1 + (c % 2);
     }
-    */
+   
 }
 
 char* generate_init(vector<int> k, char* m) {
 
     char* x = new char[BLOCK_SIZE];
-    for (int i = 0; i < BLOCK_SIZE; i++) {
+/*    for (int i = 0; i < BLOCK_SIZE; i++) {
         x[i] = (substitute(i, 0) << 4) | substitute(i, 3);
     }
-    x[4] = x[4] ^ 0x04;
-    /*
+    */
+    
     char* p1 = (char*)&(k[3]);
 
     for (int i = 0; i < 8; i++) {
@@ -77,7 +80,7 @@ char* generate_init(vector<int> k, char* m) {
     }
 
     generate(x);
-    */
+    
     return x;
 }
 
@@ -249,7 +252,7 @@ vector<int> gen_key(char* keyword) {
 
 
 
-int main(int argc, char *argv[]) {
+int main_cipher(int argc, char *argv[]) {
     char* input;
     char* keyword;
 
@@ -271,6 +274,7 @@ int main(int argc, char *argv[]) {
 	        ofs << e[i];
 	    }
 	    ofs.close();
+
     }   
     
     if( argc == 5 ) {
