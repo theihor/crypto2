@@ -64,6 +64,7 @@ char* generate_init(vector<int> k, char* m) {
     for (int i = 0; i < BLOCK_SIZE; i++) {
         x[i] = (substitute(i, 0) << 4) | substitute(i, 3);
     }
+    x[4] = x[4] ^ 0x04;
     /*
     char* p1 = (char*)&(k[3]);
 
@@ -116,7 +117,7 @@ char* cipher(char* m, int size, vector<int> key) {
    // printf("\"\n");
    
     int b = 0;
-    while (b + BLOCK_SIZE < size) {
+    while (b + BLOCK_SIZE <= size) {
         for (int k = 0; k < 3; k++) {
             for (int i = 0; i < 8; i++) {
                 iteration(init, key[i], i);
@@ -165,7 +166,7 @@ char* decrypt(char* e, int size, vector<int> key) {
    // printf("\"\n");
    
     int b = 0;
-    while (b + BLOCK_SIZE < size) {
+    while (b + BLOCK_SIZE <= size) {
         for (int k = 0; k < 3; k++) {
             for (int i = 0; i < 8; i++) {
                 iteration(init, key[i], i);
@@ -212,13 +213,26 @@ vector<int> gen_key(char* keyword) {
     int n = strlen(keyword);
     if (n < KEY_SIZE) {
         int k = 0;
+        
         for (int i = 0; i < n / 4; i += 4) {
+            int x = 0;
+            for (int i = 0; i < 8; i++) {
+                x |= substitute(k,i); 
+                x <<= 4;
+            }
             int *p = (int*)&keyword[i];
-            result[k] = *p;
+            result[k] = (*p) ^ x;
             k++;
         }
         while(k < 8) {
-            result[k] = keyword[k * 3 % n] ^ ((substitute(k,1) << 4) | substitute(k, 7));
+            int x = 0;
+            for (int i = 0; i < 8; i++) {
+                x |= substitute(k,i); 
+                x <<= 4;
+            }
+            //printf("x = %d\n", x);
+            result[k] = x;
+            //printf("r[k] = %d\n", result[k]);
             k++;
         }
     } else {
@@ -242,41 +256,41 @@ int main(int argc, char *argv[]) {
     if( argc == 4 ) {
         keyword = argv[1];
 	
-	ifstream ifs(argv[2], ios::binary|ios::ate);
-	ifstream::pos_type pos = ifs.tellg();
-        int n = pos;
-	char* input = new char[n];
+	    ifstream ifs(argv[2], ios::binary|ios::ate);
+	    ifstream::pos_type pos = ifs.tellg();
+            int n = pos;
+	    char* input = new char[n];
 
-	ifs.seekg(0, ios::beg);
-	ifs.read(&input[0], n);
-	
-        char* e = cipher(input, n, gen_key(keyword));
-	
-	ofstream ofs (argv[3], ios::binary | ios::trunc | ios::out);
-	for (int i = 0; i < n; i++) {
-	    ofs << e[i];
-	}
-	ofs.close();
+	    ifs.seekg(0, ios::beg);
+	    ifs.read(&input[0], n);
+	    
+            char* e = cipher(input, n, gen_key(keyword));
+	    
+	    ofstream ofs (argv[3], ios::binary | ios::trunc | ios::out);
+	    for (int i = 0; i < n; i++) {
+	        ofs << e[i];
+	    }
+	    ofs.close();
     }   
     
     if( argc == 5 ) {
         if (strcmp(argv[1], "-d") == 0) {
             keyword = argv[2];
             ifstream ifs(argv[3], ios::binary|ios::ate);
-	    ifstream::pos_type pos = ifs.tellg();
-	    int n = pos;
-	    char* input = new char[n];
+	        ifstream::pos_type pos = ifs.tellg();
+	        int n = pos;
+	        char* input = new char[n];
 
-	    ifs.seekg(0, ios::beg);
-	    ifs.read(&input[0], n);
+	        ifs.seekg(0, ios::beg);
+	        ifs.read(&input[0], n);
 	    
             char* m = decrypt(input, n, gen_key(keyword));
 	    
-	    ofstream ofs (argv[4], ios::binary | ios::trunc | ios::out);
-	    for (int i = 0; i < n; i++) {
-		ofs << m[i];
-	    }
-	    ofs.close();
+	        ofstream ofs (argv[4], ios::binary | ios::trunc | ios::out);
+	        for (int i = 0; i < n; i++) {
+		        ofs << m[i];
+	        }
+	        ofs.close();
 	    
             //print_(message, n);
         }
@@ -285,32 +299,39 @@ int main(int argc, char *argv[]) {
 
 
 
-    //if( argc == 2 ) {
-    //  char* m = argv[1];
-    //  int size = strlen(m);
-    //  //printf("Message text:  \"%s\"\n", argv[1]);
-    //  //
-    //  //printf("Message bytes: \"");
-    //  //print_hex(m, size);
-    //  //printf("\"\n");
+    if( argc == 3 ) {
+      char* m = argv[2];
+      vector<int> key = gen_key(argv[1]);
+      int size = strlen(m);
+    
+      printf("Generated key: \"");
+      for (int i : key) {
+          printf("%x ", i);
+      }
+      printf("\"\n");
+    
+      printf("Message text:  \"%s\"\n", m);
+      
+      printf("Message bytes: \"");
+      print_hex(m, size);
+      printf("\"\n");
 
-    //  //vector<int> key = gen_key();
-    //  //char* e = cipher(m, size, key); 
+      char* e = cipher(m, size, key); 
 
-    //  //printf("Cipher:        \"");
-    //  //print_hex(e, size); //printf(" ");
-    //  //printf("\"\n");
+      printf("Cipher:        \"");
+      print_hex(e, size); //printf(" ");
+      printf("\"\n");
 
-    //  //printf("Decrypted hex: \"");
-    //  //char* decryption = decrypt(e, size, key);
-    //  //print_hex(decryption, size); //printf(" ");
-    //  //printf("\"\n");
-    //  //printf("Decrypted:     \"");
-    //  //print_(decryption, size); //printf(" ");
-    //  //printf("\"\n");
+      printf("Decrypted hex: \"");
+      char* decryption = decrypt(e, size, key);
+      print_hex(decryption, size); //printf(" ");
+      printf("\"\n");
+      printf("Decrypted:     \"");
+      print_(decryption, size); //printf(" ");
+      printf("\"\n");
 
 
-    //}
+    }
 
     return 0;
 }
