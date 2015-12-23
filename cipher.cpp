@@ -219,8 +219,8 @@ vector<int> gen_key(char* keyword) {
         
         for (int i = 0; i < n / 4; i += 4) {
             int x = 0;
-            for (int i = 0; i < 8; i++) {
-                x |= substitute(k,i); 
+            for (int j = 0; j < 8; j++) {
+                x |= substitute(k,j); 
                 x <<= 4;
             }
             int *p = (int*)&keyword[i];

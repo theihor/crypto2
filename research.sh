@@ -1,6 +1,6 @@
 #!/bin/bash
 echo Compiling...
-g++ rng.cpp
+g++ rng.cpp --std=c++0x
 
 rm stats.txt
 touch stats.txt
